@@ -1,0 +1,31 @@
+name: AliExpress Auto Collect Coins
+
+on:
+  schedule:
+    # ירוץ בכל יום בשעה 02:00 בלילה (לפי שעון UTC)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # מאפשר להפעיל ידנית לניסיון
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run Collector
+      env:
+        # כאן מגדירים את המשתנים שהסקריפט צריך (לפי הקובץ .env בתמונה)
+        ALIE_USERNAME: ${{ secrets.ALIE_USERNAME }}
+        ALIE_PASSWORD: ${{ secrets.ALIE_PASSWORD }}
+      run: python run_collector.py
