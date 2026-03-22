@@ -25,34 +25,46 @@ def main():
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
-        # 1. כניסה לאתר כדי להגדיר את הדומיין של ה-Cookies
-        print("Opening AliExpress...")
+        # 1. חייבים להיכנס קודם לכתובת המדויקת של הדומיין
+        print("Navigating to AliExpress to set domain context...")
         driver.get("https://www.aliexpress.com")
-        random_sleep()
+        random_sleep(5, 8) # נותנים לדף להיטען היטב
 
-        # 2. הזרקת ה-Cookie (xman_f)
+        # 2. הזרקת ה-Cookie
         cookie_val = os.getenv("ALIE_COOKIE")
         if not cookie_val:
             print("Error: ALIE_COOKIE secret is missing!")
             return
 
         print("Injecting authentication cookie...")
+        # הסרנו את הנקודה לפני aliexpress.com במידה וזה מה שגרם ל-Mismatch
+        # והוספנו ניקוי לרווחים
         driver.add_cookie({
             'name': 'xman_f',
             'value': cookie_val.strip(),
-            'domain': '.aliexpress.com',
+            'domain': 'www.aliexpress.com', # שינוי כאן ל-www
             'path': '/'
         })
 
-        # 3. רענון ואימות
+        # 3. ניסיון נוסף עם דומיין כללי אם הראשון נכשל (אופציונלי)
+        try:
+            driver.add_cookie({
+                'name': 'xman_f',
+                'value': cookie_val.strip(),
+                'domain': '.aliexpress.com',
+                'path': '/'
+            })
+        except:
+            pass
+
+        print("Cookie injected. Refreshing page...")
         driver.refresh()
-        print("Page refreshed. Navigating to coins page...")
         random_sleep(5, 8)
 
         # 4. מעבר לעמוד המטבעות
+        print("Navigating to coins page...")
         driver.get("https://coins.aliexpress.com")
         random_sleep(10, 15)
-
         # 5. ניסיון ללחוץ על כפתור האיסוף
         try:
             wait = WebDriverWait(driver, 20)
