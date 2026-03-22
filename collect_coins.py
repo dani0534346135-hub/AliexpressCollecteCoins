@@ -102,35 +102,39 @@ def collect_coins(driver):
     except Exception as e:
         print(f"Collection failed: {e}")
         return False
-
+        
 def main():
     chrome_options = Options()
     
-    # הגדרות קריטיות לריצה בתוך GitHub
     if IS_GITHUB:
-        chrome_options.add_argument("--headless") # ריצה ללא חלון
+        chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--window-size=1920,1080")
-    
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    
-    # שימוש ב-WebDriverManager בצורה אוטומטית (עוקף את ה-winreg)
+        # מונע זיהוי של בוטים
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
+
     try:
-        from webdriver_manager.chrome import ChromeDriverManager
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        # ב-GitHub Actions, הדרייבר לרוב כבר נמצא בנתיב המערכת
+        print("Attempting to initialize WebDriver...")
+        driver = webdriver.Chrome(options=chrome_options)
+        print("WebDriver initialized successfully using system driver")
     except Exception as e:
-        print(f"Driver init failed: {e}")
-        return
+        print(f"System driver failed, trying WebDriverManager: {e}")
+        try:
+            from webdriver_manager.chrome import ChromeDriverManager
+            from selenium.webdriver.chrome.service import Service
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+        except Exception as e2:
+            print(f"All driver initialization methods failed: {e2}")
+            return
 
     try:
         if login(driver):
             collect_coins(driver)
-            # צילום מסך לצורך בקרה בתוך GitHub Actions
             if IS_GITHUB:
-                driver.save_screenshot("result.png")
+                driver.save_screenshot("final_result.png")
     finally:
         driver.quit()
 
