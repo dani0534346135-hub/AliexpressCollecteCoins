@@ -26,9 +26,10 @@ def main():
 
     try:
         # 1. חייבים להיכנס קודם לכתובת המדויקת של הדומיין
-        print("Navigating to AliExpress to set domain context...")
+      # 1. כניסה לדף הבית
+        print("Navigating to AliExpress...")
         driver.get("https://www.aliexpress.com")
-        random_sleep(5, 8) # נותנים לדף להיטען היטב
+        random_sleep(5, 8)
 
         # 2. הזרקת ה-Cookie
         cookie_val = os.getenv("ALIE_COOKIE")
@@ -37,32 +38,34 @@ def main():
             return
 
         print("Injecting authentication cookie...")
-        # הסרנו את הנקודה לפני aliexpress.com במידה וזה מה שגרם ל-Mismatch
-        # והוספנו ניקוי לרווחים
-        driver.add_cookie({
-            'name': 'xman_f',
-            'value': cookie_val.strip(),
-            'domain': 'www.aliexpress.com', # שינוי כאן ל-www
-            'path': '/'
-        })
-
-        # 3. ניסיון נוסף עם דומיין כללי אם הראשון נכשל (אופציונלי)
+        
+        # אנחנו מנסים להוסיף את הקוקי בלי להגדיר דומיין ידנית
+        # סלניום יצמיד אותו אוטומטית לדומיין הנוכחי (www.aliexpress.com)
         try:
             driver.add_cookie({
                 'name': 'xman_f',
                 'value': cookie_val.strip(),
-                'domain': '.aliexpress.com',
-                'path': '/'
+                'path': '/',
+                'domain': '.aliexpress.com' # הגדרה רחבה שתופסת גם תתי דומיינים
             })
-        except:
-            pass
+            print("Successfully added with domain .aliexpress.com")
+        except Exception as e:
+            print(f"Failed with .domain, trying without explicit domain: {e}")
+            try:
+                driver.add_cookie({
+                    'name': 'xman_f',
+                    'value': cookie_val.strip(),
+                    'path': '/'
+                })
+                print("Successfully added without explicit domain")
+            except Exception as e2:
+                print(f"Critical error adding cookie: {e2}")
+                return
 
-        print("Cookie injected. Refreshing page...")
+        # 3. רענון ומעבר לעמוד המטבעות
+        print("Refreshing and navigating to coins page...")
         driver.refresh()
         random_sleep(5, 8)
-
-        # 4. מעבר לעמוד המטבעות
-        print("Navigating to coins page...")
         driver.get("https://coins.aliexpress.com")
         random_sleep(10, 15)
         # 5. ניסיון ללחוץ על כפתור האיסוף
