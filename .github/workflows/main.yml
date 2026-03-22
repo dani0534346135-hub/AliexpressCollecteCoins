@@ -4,7 +4,7 @@ on:
   schedule:
     # ירוץ בכל יום בשעה 02:00 בלילה (לפי שעון UTC)
     - cron: '0 2 * * *'
-  workflow_dispatch: # מאפשר להפעיל ידנית לניסיון
+  workflow_dispatch: # מאפשר לך להפעיל ידנית לניסיון בכל רגע
 
 jobs:
   build:
@@ -19,13 +19,19 @@ jobs:
       with:
         python-version: '3.9'
 
+    - name: Install Google Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        # אם הקובץ נקרא "דרישות.txt", שנה את השורה למטה בהתאם
+        pip install -r requirements.txt || pip install -r דרישות.txt
 
     - name: Run Collector
       env:
-        # כאן מגדירים את המשתנים שהסקריפט צריך (לפי הקובץ .env בתמונה)
-        ALIE_USERNAME: ${{ secrets.ALIE_USERNAME }}
-        ALIE_PASSWORD: ${{ secrets.ALIE_PASSWORD }}
+        # אלו השמות המדויקים שהסקריפט שלך מחפש (לפי הודעת השגיאה הקודמת)
+        ALIEXPRESS_EMAIL: ${{ secrets.ALIEXPRESS_EMAIL }}
+        ALIEXPRESS_PASSWORD: ${{ secrets.ALIEXPRESS_PASSWORD }}
       run: python collect_coins.py
