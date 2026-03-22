@@ -2,139 +2,69 @@ import time
 import random
 import os
 import sys
-from dotenv import load_dotenv
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver import ActionChains
-from selenium.webdriver.common.keys import Keys
 
 # בדיקה האם רץ ב-GitHub Actions
 IS_GITHUB = os.getenv('GITHUB_ACTIONS') == 'true'
 
-# === FORCE UTF-8 OUTPUT ===
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")
+def random_sleep(min_s=2, max_s=5):
+    time.sleep(random.uniform(min_s, max_s))
 
-load_dotenv()
-
-ALIEXPRESS_EMAIL = os.getenv("ALIEXPRESS_EMAIL")
-ALIEXPRESS_PASSWORD = os.getenv("ALIEXPRESS_PASSWORD")
-
-if not ALIEXPRESS_EMAIL or not ALIEXPRESS_PASSWORD:
-    print("Error: Environment variables for ALIEXPRESS_EMAIL and ALIEXPRESS_PASSWORD must be set.")
-    exit(1)
-
-def random_sleep(min_seconds=1, max_seconds=3):
-    time.sleep(random.uniform(min_seconds, max_seconds))
-
-def type_like_human(element, text):
-    for char in text:
-        if random.random() < 0.01:
-            typo_char = random.choice('qwertyuiopasdfghjklzxcvbnm')
-            element.send_keys(typo_char)
-            random_sleep(0.1, 0.3)
-            element.send_keys(Keys.BACKSPACE)
-            random_sleep(0.2, 0.5)
-        element.send_keys(char)
-        random_sleep(0.05, 0.15)
-
-def login(driver):
-    try:
-        print("Starting login process...")
-        wait = WebDriverWait(driver, 20)
-        
-        # טעינת עמוד ההתחברות ישירות
-        driver.get("https://login.aliexpress.com")
-        random_sleep(3, 5)
-
-        # חיפוש שדה אימייל
-        email_input = wait.until(EC.presence_of_element_located((By.ID, "fm-login-id")))
-        print("Found email input field")
-        type_like_human(email_input, ALIEXPRESS_EMAIL)
-        random_sleep(1, 2)
-
-        # הזנת סיסמה
-        password_input = driver.find_element(By.ID, "fm-login-password")
-        print("Entering password...")
-        type_like_human(password_input, ALIEXPRESS_PASSWORD)
-        random_sleep(1, 2)
-
-        # לחיצה על כפתור התחברות
-        login_btn = driver.find_element(By.CSS_SELECTOR, "button.fm-button")
-        login_btn.click()
-        
-        print("Clicked sign in button, waiting for redirect...")
-        random_sleep(10, 15)
-        return True
-    except Exception as e:
-        print(f"Login failed: {e}")
-        return False
-
-def collect_coins(driver):
-    try:
-        print("Navigating to coins page...")
-        driver.get("https://coins.aliexpress.com")
-        random_sleep(10, 15)
-        
-        # ניסיון ללחוץ על כפתור האיסוף (לפי ה-Selectors מהקוד שלך)
-        wait = WebDriverWait(driver, 20)
-        collect_selectors = [
-            "//div[contains(@class, 'checkin-button')]",
-            "//div[contains(text(), 'Collect')]",
-            "//span[contains(text(), 'Collect')]"
-        ]
-        
-        for selector in collect_selectors:
-            try:
-                btn = wait.until(EC.element_to_be_clickable((By.XPATH, selector)))
-                btn.click()
-                print("SUCCESS: Coins collected!")
-                return True
-            except:
-                continue
-        
-        print("Could not find collect button. Maybe already collected?")
-        return False
-    except Exception as e:
-        print(f"Collection failed: {e}")
-        return False
-        
 def main():
     chrome_options = Options()
-    
     if IS_GITHUB:
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        # מונע זיהוי של בוטים
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
+    
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    driver = webdriver.Chrome(options=chrome_options)
 
     try:
-        # ב-GitHub Actions, הדרייבר לרוב כבר נמצא בנתיב המערכת
-        print("Attempting to initialize WebDriver...")
-        driver = webdriver.Chrome(options=chrome_options)
-        print("WebDriver initialized successfully using system driver")
-    except Exception as e:
-        print(f"System driver failed, trying WebDriverManager: {e}")
-        try:
-            from webdriver_manager.chrome import ChromeDriverManager
-            from selenium.webdriver.chrome.service import Service
-            service = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-        except Exception as e2:
-            print(f"All driver initialization methods failed: {e2}")
+        # 1. כניסה לאתר כדי להגדיר את הדומיין של ה-Cookies
+        print("Opening AliExpress...")
+        driver.get("https://www.aliexpress.com")
+        random_sleep()
+
+        # 2. הזרקת ה-Cookie (xman_f)
+        cookie_val = os.getenv("ALIE_COOKIE")
+        if not cookie_val:
+            print("Error: ALIE_COOKIE secret is missing!")
             return
 
-    try:
-        if login(driver):
-            collect_coins(driver)
+        print("Injecting authentication cookie...")
+        driver.add_cookie({
+            'name': 'xman_f',
+            'value': cookie_val.strip(),
+            'domain': '.aliexpress.com',
+            'path': '/'
+        })
+
+        # 3. רענון ואימות
+        driver.refresh()
+        print("Page refreshed. Navigating to coins page...")
+        random_sleep(5, 8)
+
+        # 4. מעבר לעמוד המטבעות
+        driver.get("https://coins.aliexpress.com")
+        random_sleep(10, 15)
+
+        # 5. ניסיון ללחוץ על כפתור האיסוף
+        try:
+            wait = WebDriverWait(driver, 20)
+            # מחפש כפתור שמכיל את המילה Collect או כפתור צ'ק-אין
+            collect_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'checkin-button')] | //span[contains(text(), 'Collect')]")))
+            collect_btn.click()
+            print("SUCCESS: Coins collected successfully!")
+        except Exception as e:
+            print(f"Could not find collect button. Check if already collected today. Error: {e}")
             if IS_GITHUB:
-                driver.save_screenshot("final_result.png")
+                driver.save_screenshot("check_page.png")
+
     finally:
         driver.quit()
 
