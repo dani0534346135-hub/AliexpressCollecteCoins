@@ -28,4 +28,4 @@ jobs:
         # כאן מגדירים את המשתנים שהסקריפט צריך (לפי הקובץ .env בתמונה)
         ALIE_USERNAME: ${{ secrets.ALIE_USERNAME }}
         ALIE_PASSWORD: ${{ secrets.ALIE_PASSWORD }}
-      run: python run_collector.py
+      run: python collect_coins.py
