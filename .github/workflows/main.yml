@@ -2,9 +2,8 @@ name: AliExpress Auto Collect Coins
 
 on:
   schedule:
-    # ירוץ בכל יום בשעה 02:00 בלילה (לפי שעון UTC)
     - cron: '0 2 * * *'
-  workflow_dispatch: # מאפשר לך להפעיל ידנית לניסיון בכל רגע
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,19 +18,21 @@ jobs:
       with:
         python-version: '3.9'
 
-    - name: Install Google Chrome
+    - name: Install Chrome and Driver
       run: |
         sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+        sudo apt-get install -y google-chrome-stable chromium-chromedriver
 
     - name: Install dependencies
       run: |
-        # אם הקובץ נקרא "דרישות.txt", שנה את השורה למטה בהתאם
         pip install -r requirements.txt || pip install -r דרישות.txt
+        # התקנת ספרייה שעוזרת ללינוקס לנהל תצוגה "וירטואלית"
+        pip install pyvirtualdisplay 
 
     - name: Run Collector
       env:
-        # אלו השמות המדויקים שהסקריפט שלך מחפש (לפי הודעת השגיאה הקודמת)
         ALIEXPRESS_EMAIL: ${{ secrets.ALIEXPRESS_EMAIL }}
         ALIEXPRESS_PASSWORD: ${{ secrets.ALIEXPRESS_PASSWORD }}
+        # פקודה שאומרת לסקריפט לרוץ בלי לנסות לפתוח חלון גרפי
+        PYTHONPATH: .
       run: python collect_coins.py
