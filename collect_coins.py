@@ -62,12 +62,59 @@ def main():
                 print(f"Critical error adding cookie: {e2}")
                 return
 
-        # 3. רענון ומעבר לעמוד המטבעות
+# 3. רענון ומעבר לעמוד המטבעות
         print("Refreshing and navigating to coins page...")
         driver.refresh()
         random_sleep(5, 8)
+        
+        # מעבר לעמוד המטבעות
         driver.get("https://coins.aliexpress.com")
-        random_sleep(10, 15)
+        print("Waiting for coins page to load...")
+        random_sleep(12, 18) # זמן טעינה ארוך יותר לעמוד כבד
+
+        # --- שלב חדש: סגירת פופ-אפים שמפריעים ---
+        print("Checking for annoying pop-ups...")
+        pop_up_xpaths = [
+            "//a[contains(@class, 'close-btn')]", 
+            "//div[contains(@class, 'next-dialog-close')]",
+            "//img[contains(@class, 'pop-close-btn')]",
+            "//div[@class='ui-window-close']"
+        ]
+        for xpath in pop_up_xpaths:
+            try:
+                driver.find_element(By.XPATH, xpath).click()
+                print(f"Closed pop-up: {xpath}")
+                random_sleep(2, 4)
+            except:
+                continue
+
+        # --- שלב 5: חיפוש ולחיצה על כפתור האיסוף ---
+        print("Searching for the magic collect button...")
+        # רשימת מזהים אפשריים לכפתור (מתעדכן לפי השינויים של עליאקספרס)
+        collect_xpaths = [
+            "//div[contains(@class, 'checkin-button')]",
+            "//button[contains(@class, 'is-checkin')]",
+            "//span[contains(text(), 'Collect')]",
+            "//div[@id='coin-check-in-btn']",
+            "//*[contains(text(), 'קבל מטבעות')]"
+        ]
+
+        found = False
+        for xpath in collect_xpaths:
+            try:
+                btn = driver.find_element(By.XPATH, xpath)
+                if btn.is_displayed():
+                    # לחיצה באמצעות JavaScript - הכי אמין ב-Headless
+                    driver.execute_script("arguments[0].click();", btn)
+                    print(f"SUCCESS: Coins collected using {xpath}!")
+                    found = True
+                    break
+            except:
+                continue
+
+        if not found:
+            print("Could not find the button. Maybe already collected or page layout changed.")
+            driver.save_screenshot("debug_coins_page.png")
 # 5. לחיצה על כפתור האיסוף - חיפוש גמיש יותר
         print("Searching for collect button...")
         try:
