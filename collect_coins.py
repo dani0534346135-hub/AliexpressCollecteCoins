@@ -68,15 +68,39 @@ def main():
         random_sleep(5, 8)
         driver.get("https://coins.aliexpress.com")
         random_sleep(10, 15)
-        # 5. ניסיון ללחוץ על כפתור האיסוף
+# 5. לחיצה על כפתור האיסוף - חיפוש גמיש יותר
+        print("Searching for collect button...")
         try:
-            wait = WebDriverWait(driver, 20)
-            # מחפש כפתור שמכיל את המילה Collect או כפתור צ'ק-אין
-            collect_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'checkin-button')] | //span[contains(text(), 'Collect')]")))
-            collect_btn.click()
-            print("SUCCESS: Coins collected successfully!")
+            wait = WebDriverWait(driver, 30)
+            
+            # רשימת XPATH אפשריים לכפתור האיסוף (גרסת דסקטופ ונייד)
+            potential_buttons = [
+                "//div[contains(@class, 'checkin-button')]",
+                "//span[contains(text(), 'Collect')]",
+                "//button[contains(text(), 'Collect')]",
+                "//div[@id='coin-check-in-btn']",
+                "//div[contains(@class, 'coins-checkin-btn')]",
+                "//*[contains(text(), 'קבל מטבעות')]" # תמיכה בעברית אם האתר קפץ לעברית
+            ]
+            
+            found = False
+            for xpath in potential_buttons:
+                try:
+                    btn = driver.find_element(By.XPATH, xpath)
+                    if btn.is_displayed():
+                        btn.click()
+                        print(f"SUCCESS: Coins collected using XPath: {xpath}")
+                        found = True
+                        break
+                except:
+                    continue
+            
+            if not found:
+                print("Could not find an active collect button. Maybe already collected?")
+                driver.save_screenshot("page_state.png") # שומר צילום מסך כדי שנוכל לראות מה הבעיה
+                
         except Exception as e:
-            print(f"Could not find collect button. Check if already collected today. Error: {e}")
+            print(f"An error occurred during collection: {e}")
             if IS_GITHUB:
                 driver.save_screenshot("check_page.png")
 
