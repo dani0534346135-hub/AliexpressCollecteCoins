@@ -5,68 +5,61 @@ from selenium.webdriver.chrome.options import Options
 
 def main():
     chrome_options = Options()
-    user_agent = "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
-    chrome_options.add_argument(f'user-agent={user_agent}')
     
+    # הפעם בלי Mobile Emulation כדי שהקוקי מהמחשב יעבוד ב-100%
     if os.getenv('GITHUB_ACTIONS') == 'true':
         chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--window-size=1920,1080")
 
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
+        # 1. פתיחת האתר
         print("Opening AliExpress...")
-        driver.get("https://m.aliexpress.com")
-        time.sleep(10)
+        driver.get("https://www.aliexpress.com")
+        time.sleep(5)
         
+        # 2. הזרקת הקוקי
         cookie_val = os.getenv("ALIE_COOKIE")
         if cookie_val:
             print("Injecting cookie...")
-            driver.add_cookie({'name': 'xman_f', 'value': cookie_val.strip(), 'path': '/'})
+            driver.add_cookie({
+                'name': 'xman_f',
+                'value': cookie_val.strip(),
+                'path': '/',
+                'domain': '.aliexpress.com'
+            })
             driver.refresh()
-            time.sleep(12)
+            time.sleep(8)
 
-        # ניווט לדף המטבעות
+        # 3. ניווט לקישור המטבעות המדויק
         target_url = "https://m.aliexpress.com/p/coin-index/index.html?_immersiveMode=true&from=pc302"
-        print(f"Navigating to coins page...")
+        print(f"Navigating to: {target_url}")
         driver.get(target_url)
         
-        # המתנה ארוכה לטעינת הכפתור הכתום
-        time.sleep(25) 
+        time.sleep(20) 
         driver.save_screenshot("after_loading.png")
 
-        print("Searching for the 'לאסוף' button...")
+        # 4. לחיצה ממוקדת על הכפתור הכתום "לאסוף"
+        print("Searching for 'לאסוף'...")
         result = driver.execute_script("""
-            var elements = document.querySelectorAll('div, span, button, p, a');
+            // חיפוש לפי הטקסט המדויק שאמרת
+            var elements = document.querySelectorAll('div, span, button, p');
             for (var el of elements) {
-                var text = el.innerText || "";
-                // מחפש את המילה המדויקת שכתבת
-                if (text.includes('לאסוף') || text.includes('Collect') || text.includes('להרוויח')) {
-                    // וודא שזה כפתור באזור המרכזי ולא בתחתית
-                    var rect = el.getBoundingClientRect();
-                    if (rect.top > 100 && rect.top < 600) {
-                        el.click();
-                        return "SUCCESS: Clicked on button with text: " + text;
-                    }
+                if (el.innerText.includes('לאסוף') || el.innerText.includes('Collect')) {
+                    el.click();
+                    return "SUCCESS: Clicked 'לאסוף' button";
                 }
             }
-            
-            // גיבוי: לחיצה במיקום המדויק של הכפתור הכתום הגדול (קצת מתחת למרכז)
-            var x = window.innerWidth / 2;
-            var y = 430; 
-            var elAt = document.elementFromPoint(x, y);
-            if (elAt) {
-                elAt.click();
-                return "SUCCESS: Clicked by coordinates on Orange Area";
-            }
-            
+            // לחיצה במיקום הכפתור הכתום לפי הקואורדינטות החדשות (בגרסת דסקטופ)
+            var btn = document.elementFromPoint(window.innerWidth / 2, 430);
+            if (btn) { btn.click(); return "SUCCESS: Clicked by position"; }
             return "Button not found";
         """)
-        print(f"Result: {result}")
+        print(f"Action Result: {result}")
         
-        # צילום מסך סופי לראות אם הצלחנו
         time.sleep(5)
         driver.save_screenshot("final_result.png")
 
