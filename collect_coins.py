@@ -5,8 +5,6 @@ from selenium.webdriver.chrome.options import Options
 
 def main():
     chrome_options = Options()
-    
-    # התחזות לטלפון אמיתי
     user_agent = "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
     chrome_options.add_argument(f'user-agent={user_agent}')
     
@@ -19,55 +17,61 @@ def main():
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
-        # 1. פתיחת האתר (חובה לפתוח לפני הזרקת קוקי)
         print("Opening AliExpress...")
         driver.get("https://m.aliexpress.com")
-        time.sleep(10) # זמן טעינה מורחב
+        time.sleep(10)
         
         cookie_val = os.getenv("ALIE_COOKIE")
         if cookie_val:
-            print("Injecting fresh cookie...")
-            # שיטה בטוחה: בלי הגדרת 'domain' ידנית, סלניום לוקח את הדומיין הנוכחי
-            driver.add_cookie({
-                'name': 'xman_f',
-                'value': cookie_val.strip(),
-                'path': '/'
-            })
-            print("Cookie injected successfully!")
+            print("Injecting cookie...")
+            driver.add_cookie({'name': 'xman_f', 'value': cookie_val.strip(), 'path': '/'})
             driver.refresh()
-            time.sleep(10)
+            time.sleep(12)
 
-        # 2. ניווט לקישור המטבעות שלך
+        # ניווט לדף המטבעות
         target_url = "https://m.aliexpress.com/p/coin-index/index.html?_immersiveMode=true&from=pc302"
-        print(f"Navigating to: {target_url}")
+        print(f"Navigating to coins page...")
         driver.get(target_url)
         
+        # המתנה ארוכה לטעינת הכפתור הכתום
         time.sleep(25) 
         driver.save_screenshot("after_loading.png")
 
-        # 3. לחיצה על כפתור האיסוף
-        print("Searching for collect button...")
+        print("Searching for the 'לאסוף' button...")
         result = driver.execute_script("""
-            var elements = document.querySelectorAll('div, span, button, p');
+            var elements = document.querySelectorAll('div, span, button, p, a');
             for (var el of elements) {
                 var text = el.innerText || "";
-                if (text.includes('30') || text.includes('Collect') || text.includes('מטבעות')) {
-                    el.click();
-                    return "SUCCESS: Clicked " + text;
+                // מחפש את המילה המדויקת שכתבת
+                if (text.includes('לאסוף') || text.includes('Collect') || text.includes('להרוויח')) {
+                    // וודא שזה כפתור באזור המרכזי ולא בתחתית
+                    var rect = el.getBoundingClientRect();
+                    if (rect.top > 100 && rect.top < 600) {
+                        el.click();
+                        return "SUCCESS: Clicked on button with text: " + text;
+                    }
                 }
             }
-            // ניסיון לחיצה לפי מיקום אם הטקסט לא נמצא
-            var clickTarget = document.elementFromPoint(window.innerWidth / 2, 220);
-            if (clickTarget) { clickTarget.click(); return "Clicked by coordinates"; }
+            
+            // גיבוי: לחיצה במיקום המדויק של הכפתור הכתום הגדול (קצת מתחת למרכז)
+            var x = window.innerWidth / 2;
+            var y = 430; 
+            var elAt = document.elementFromPoint(x, y);
+            if (elAt) {
+                elAt.click();
+                return "SUCCESS: Clicked by coordinates on Orange Area";
+            }
+            
             return "Button not found";
         """)
         print(f"Result: {result}")
         
+        # צילום מסך סופי לראות אם הצלחנו
         time.sleep(5)
         driver.save_screenshot("final_result.png")
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"Error: {e}")
     finally:
         driver.quit()
 
