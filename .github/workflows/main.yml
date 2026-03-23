@@ -31,9 +31,9 @@ jobs:
         ALIE_COOKIE: ${{ secrets.ALIE_COOKIE }}
       run: python collect_coins.py
 
-    - name: Upload Screenshot on Failure
-      if: failure()
+    - name: Upload Screenshot
+      if: always() # זה יבטיח שהתמונה תעלה גם אם הסקריפט הצליח וגם אם נכשל
       uses: actions/upload-artifact@v4
       with:
-        name: failure-screenshot
+        name: aliexpress-view
         path: "*.png"
