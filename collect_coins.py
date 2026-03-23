@@ -70,7 +70,12 @@ def main():
         # מעבר לעמוד המטבעות
         driver.get("https://coins.aliexpress.com")
         print("Waiting for coins page to load...")
-        random_sleep(12, 18) # זמן טעינה ארוך יותר לעמוד כבד
+        random_sleep(12, 18) 
+
+        # --- צילום מסך - חשוב מאוד! ---
+        # זה יאפשר לנו לראות מה הבוט רואה בלשונית ה-Artifacts
+        driver.save_screenshot("debug_coins_page.png")
+        print("Screenshot saved: debug_coins_page.png")
 
         # --- שלב חדש: סגירת פופ-אפים שמפריעים ---
         print("Checking for annoying pop-ups...")
@@ -78,15 +83,33 @@ def main():
             "//a[contains(@class, 'close-btn')]", 
             "//div[contains(@class, 'next-dialog-close')]",
             "//img[contains(@class, 'pop-close-btn')]",
-            "//div[@class='ui-window-close']"
+            "//div[@class='ui-window-close']",
+            "//div[contains(@class, 'overlay')]" # הוספתי עוד סוג נפוץ
         ]
         for xpath in pop_up_xpaths:
             try:
-                driver.find_element(By.XPATH, xpath).click()
+                # שימוש ב-JS כדי לסגור, כי לפעמים הקליק הרגיל נחסם
+                element = driver.find_element(By.XPATH, xpath)
+                driver.execute_script("arguments[0].click();", element)
                 print(f"Closed pop-up: {xpath}")
                 random_sleep(2, 4)
             except:
                 continue
+
+        # ניסיון לחיצה על כפתור האיסוף באמצעות JavaScript (הכי אמין)
+        print("Trying to click collect button via JS...")
+        try:
+            driver.execute_script("""
+                var btns = document.querySelectorAll('div, button, span');
+                btns.forEach(function(el) {
+                    if(el.innerText.includes('Collect') || el.innerText.includes('מטבעות')) {
+                        el.click();
+                    }
+                });
+            """)
+            print("Collect script executed.")
+        except Exception as e:
+            print(f"JS Click failed: {e}")
 
         # --- שלב 5: חיפוש ולחיצה על כפתור האיסוף ---
         print("Searching for the magic collect button...")
