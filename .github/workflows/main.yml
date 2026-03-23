@@ -2,9 +2,8 @@ name: AliExpress Auto Collect Coins
 
 on:
   schedule:
-    # רץ כל יום בשעה 02:00 בלילה (זמן UTC)
     - cron: '0 2 * * *'
-  workflow_dispatch: # מאפשר לך להריץ ידנית בלחיצת כפתור
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,20 +19,16 @@ jobs:
         python-version: '3.9'
 
     - name: Install Dependencies
-      run: |
-        pip install selenium python-dotenv
+      run: pip install selenium
 
     - name: Run Collector
       env:
-        # כאן אנחנו מחברים את ה-Secrets שהגדרת בגיטהאב לקוד הפייתון
-        ALIEXPRESS_EMAIL: ${{ secrets.ALIEXPRESS_EMAIL }}
-        ALIEXPRESS_PASSWORD: ${{ secrets.ALIEXPRESS_PASSWORD }}
         ALIE_COOKIE: ${{ secrets.ALIE_COOKIE }}
       run: python collect_coins.py
 
-    - name: Upload Screenshot
-      if: always() # זה יבטיח שהתמונה תעלה גם אם הסקריפט הצליח וגם אם נכשל
+    - name: Upload Screenshots
+      if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: aliexpress-view
+        name: debug-images
         path: "*.png"
