@@ -5,7 +5,7 @@ from selenium.webdriver.chrome.options import Options
 
 def main():
     chrome_options = Options()
-    # הגדרת מובייל כפי שמצאנו שעובד לך
+    # הגדרת מובייל חובה
     mobile_emulation = { "deviceName": "Nexus 5" }
     chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
     
@@ -17,43 +17,36 @@ def main():
     driver = webdriver.Chrome(options=chrome_options)
 
     try:
-        # 1. טעינת האתר קודם כל (חיוני למניעת שגיאת Domain)
+        # 1. פתיחת האתר והזרקת קוקי
         print("Opening AliExpress Mobile...")
         driver.get("https://m.aliexpress.com")
-        time.sleep(8)
+        time.sleep(5)
         
-        # 2. הזרקת הקוקי בצורה בטוחה
         cookie_val = os.getenv("ALIE_COOKIE")
         if cookie_val:
             print("Injecting cookie...")
-            # שים לב: הסרתי את המפתח 'domain' כדי שהדפדפן יחליט לבד
-            driver.add_cookie({
-                'name': 'xman_f', 
-                'value': cookie_val.strip(), 
-                'path': '/'
-            })
-            print("Cookie injected successfully!")
-            driver.refresh() # רענון כדי להפעיל את החיבור
-            time.sleep(5)
-        
-        # 3. מעבר לקישור המטבעות שהוכחת שעובד
+            driver.add_cookie({'name': 'xman_f', 'value': cookie_val.strip(), 'path': '/'})
+            driver.refresh()
+            time.sleep(8)
+
+        # 2. כניסה לקישור הנכון ששלחת
         print("Navigating to coins page...")
-        target_url = "https://m.aliexpress.com/g/coin-index/index.html?_immersiveMode=true&from=pc302"
+        target_url = "https://m.aliexpress.com/p/coin-index/index.html?_immersiveMode=true&from=pc302"
         driver.get(target_url)
         
-        print("Waiting 20 seconds for page to stabilize...")
+        print("Waiting 20 seconds for buttons to appear...")
         time.sleep(20) 
         
         driver.save_screenshot("after_loading.png")
 
-        # 4. לחיצה על כפתור האיסוף (המספר הצהוב מהתמונה שלך)
+        # 3. לחיצה על כפתור האיסוף
         print("Searching for collect button...")
         result = driver.execute_script("""
             var elements = document.querySelectorAll('div, span, button, p');
             for (var el of elements) {
                 var text = el.innerText || "";
-                // מחפש את המספר 30 או מילים רלוונטיות
-                if (text.includes('30') || text.includes('Collect') || text.includes('מטבעות')) {
+                // מחפש את המספר 30 או 'Collect' או 'מטבעות'
+                if (text.includes('30') || text.includes('Collect') || text.includes('Check') || text.includes('מטבעות')) {
                     el.click();
                     return "Clicked: " + text;
                 }
